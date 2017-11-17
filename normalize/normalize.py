@@ -69,7 +69,7 @@ def generate_high_pass_filter(fc, fs, plot=False):
 
     return b, a
 
-def apply_K_filter(audio, fs, stage1_filter, stage2_filter):
+def apply_K_freq_weighting(audio, fs, stage1_filter, stage2_filter):
 
     stage1_audio = signal.lfilter(stage1_filter[0], stage1_filter[1], audio)
     stage2_audio = signal.lfilter(stage2_filter[0], stage2_filter[1], stage1_audio)
@@ -91,7 +91,7 @@ def loudness(audio, fs):
 
     # "K" Frequency Weighting - account for the acoustic respose of the head and auditory system
     for ch in range(numChannels):
-        audio[:,ch] = apply_K_filter(audio[:,ch], fs, stage1_filter, stage2_filter)
+        audio[:,ch] = apply_K_freq_weighting(audio[:,ch], fs, stage1_filter, stage2_filter)
 
     # Gating - ensures sections of silence or ambience do not skew the measurement
 
