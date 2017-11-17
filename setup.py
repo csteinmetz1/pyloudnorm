@@ -5,5 +5,5 @@ setup(name='pyLoudNorm',
       description='Implementation of ITU-R BS.1770-4/EBU R128 loudness algorithms in python',
       author='Christian Steinmetz',
       author_email='cjstein@clemson.edu',
-      packages=['normalize'],
+      packages=['pyLoudNorm'],
      )
