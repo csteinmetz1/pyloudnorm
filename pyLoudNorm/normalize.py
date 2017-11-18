@@ -1,14 +1,105 @@
-from scipy import signal
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
-import test
+from scipy import signal
 
-def generate_high_freq_shelving_filter(G, fc, fs, plot=False):
+class IIRfilter():
+    def __init__(self, Q, fc, fs, filter_type, G=0.0):
+        self.Q  = Q
+        self.fc = fc
+        self.fs = fs 
+        self.filter_type = filter_type
+        self.G  = G
+        self.valid_types = {'high_shelf' : 'High Shelf Filter', 'high_pass' : 'High Pass Filter'}
+        self.b, self.a = self.generate_filter_coefficients()
+
+    def __repr__(self):
+        info = """
+        {type}
+        ----------------------
+        Gain         = {G} dB
+        Q factor     = {Q} 
+        Center freq. = {fc} Hz
+        Sample rate  = {fs} 
+        ----------------------
+        b0 = {b0}
+        b1 = {b1}
+        b2 = {b2}
+        a0 = {a0}
+        a1 = {a1}
+        a2 = {a2}
+        ----------------------
+        """.format(type=self.valid_types[self.filter_type], 
+        G=self.G, Q=self.Q, fc=self.fc, fs=self.fs, 
+        b0=self.b[0], b1=self.b[1], b2=self.b[2], 
+        a0=self.a[0], a1=self.a[1], a2=self.a[2])
+
+        return info
+
+    def generate_filter_coefficients(self):
+        A  = np.sqrt(10**(self.G/20.0))
+        w0 = 2.0 * np.pi * (self.fc / self.fs)
+        alpha = np.sin(w0) / (2 * self.Q)
+        
+        if self.filter_type == 'high_shelf':
+            b0 =      A * ( (A+1) + (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha )
+            b1 = -2 * A * ( (A-1) + (A+1) * np.cos(w0)                          )
+            b2 =      A * ( (A+1) + (A-1) * np.cos(w0) - 2 * np.sqrt(A) * alpha )
+            a0 =            (A+1) - (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha
+            a1 =      2 * ( (A-1) - (A+1) * np.cos(w0)                          )
+            a2 =            (A+1) - (A-1) * np.cos(w0) - 2 * np.sqrt(A) * alpha
+        elif self.filter_type == 'high_pass':
+            b0 =  (1 + np.cos(w0))/2
+            b1 = -(1 + np.cos(w0))
+            b2 =  (1 + np.cos(w0))/2
+            a0 =   1 + alpha
+            a1 =  -2 * np.cos(w0)
+            a2 =   1 - alpha
+        else:
+            raise ValueError("Invalid filter type.")
+            
+        b = [b0, b1, b2]
+        a = [a0, a1, a2]
+
+        return b, a
+
+    def plot_magnitude():
+        pass
+
+def generate_high_shelf_filter(fs, G=4.0, fc=1680.0, plot=False):
+    """ Generates filter coeffcients for first stage of 2-stage pre-filtering
+    
+    This method generates a high shelf filter as described in ITU-R 1770-4 (pg. 3-4)
+    This filter forms the first stage of the 2-stage pre-filtering process. The high
+    shelf filter accounts for the acoustic effects of the head, where the head is 
+    modelled as a rigid spehere. 
+
+    Parameters
+    ----------
+    fs : int
+        Sampling rate in samples per second.
+    G : float, optional
+        Gain of the shelf in dB.
+    fc : float, optional
+        Center frequency of the shelf in Hertz.
+    plot : bool, optional
+        Prints a plot of the filter magnatiude response.
+
+    Returns
+    -------
+    b : list of floats
+        Numerator filter coefficients stored as [b0, b1, b2]
+    a : list of floats
+        Denomenator filter coefficients stored as [a0, a1, a2]
+
+    Examples
+    --------
+    >>> from pyloudnorm import normalize
+    """
 
     Q = 1.0 / np.sqrt(2.0)
     A  = np.sqrt(10**(G/20.0))
-    w0 = w0 = 2.0 * np.pi * (fc / fs)
+    w0 = 2.0 * np.pi * (fc / fs)
     alpha = np.sin(w0) / (2 * Q)
     
     b0 =      A * ( (A+1) + (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha )
@@ -76,8 +167,8 @@ def apply_K_freq_weighting(audio, fs, stage1_filter, stage2_filter):
 
     return stage2_audio
 
-def loudness(audio, fs):
-    """ Compute the loudness for a signal."""
+def measure_loudness(audio, fs):
+    """ Measure the loudness for a signal."""
 
     if len(audio.shape) == 1: # for mono input standardize shape
         audio = audio.reshape((audio.shape[0],1))
@@ -86,8 +177,8 @@ def loudness(audio, fs):
     numChannels = audio.shape[1] # number of input channels
 
     # generate the two stages of filters
-    stage1_filter = generate_high_freq_shelving_filter(4, 1680.0, fs)
-    stage2_filter = generate_high_pass_filter(38.0, fs)
+    stage1_filter = generate_high_shelf_filter(fs, 4.0, 1680.0)
+    stage2_filter = generate_high_pass_filter(fs, 38.0)
 
     # "K" Frequency Weighting - account for the acoustic respose of the head and auditory system
     for ch in range(numChannels):
@@ -122,3 +213,8 @@ def loudness(audio, fs):
     L_KG = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)]))
 
     return L_KG
+
+high_pass = IIRfilter(0.5, 38, 48000, 'high_pass')
+high_shelf = IIRfilter(1/np.sqrt(2.0), 1680.0, 48000, 'high_shelf', G=4.0)
+print high_pass
+print high_shelf
