@@ -5,6 +5,35 @@ from textwrap import dedent
 from scipy import signal
 
 class IIRfilter():
+    """ Generates filter coeffcients for first stage of 2-stage pre-filtering
+    
+    This method generates a high shelf filter as described in ITU-R 1770-4 (pg. 3-4)
+    This filter forms the first stage of the 2-stage pre-filtering process. The high
+    shelf filter accounts for the acoustic effects of the head, where the head is 
+    modelled as a rigid spehere. 
+
+    Parameters
+    ----------
+    fs : int
+        Sampling rate in samples per second.
+    G : float, optional
+        Gain of the shelf in dB.
+    fc : float, optional
+        Center frequency of the shelf in Hertz.
+    plot : bool, optional
+        Prints a plot of the filter magnatiude response.
+
+    Returns
+    -------
+    b : list of floats
+        Numerator filter coefficients stored as [b0, b1, b2]
+    a : list of floats
+        Denomenator filter coefficients stored as [a0, a1, a2]
+
+    Examples
+    --------
+    >>> from pyloudnorm import normalize
+    """
     def __init__(self, Q, fc, fs, filter_type, G=0.0):
         self.Q  = float(Q)
         self.fc = float(fc)
@@ -86,108 +115,6 @@ class IIRfilter():
     def apply_filter(signal):
         return signal.lfilter(self.b, self.a, signal)
     
-
-def generate_high_shelf_filter(fs, G=4.0, fc=1680.0, plot=False):
-    """ Generates filter coeffcients for first stage of 2-stage pre-filtering
-    
-    This method generates a high shelf filter as described in ITU-R 1770-4 (pg. 3-4)
-    This filter forms the first stage of the 2-stage pre-filtering process. The high
-    shelf filter accounts for the acoustic effects of the head, where the head is 
-    modelled as a rigid spehere. 
-
-    Parameters
-    ----------
-    fs : int
-        Sampling rate in samples per second.
-    G : float, optional
-        Gain of the shelf in dB.
-    fc : float, optional
-        Center frequency of the shelf in Hertz.
-    plot : bool, optional
-        Prints a plot of the filter magnatiude response.
-
-    Returns
-    -------
-    b : list of floats
-        Numerator filter coefficients stored as [b0, b1, b2]
-    a : list of floats
-        Denomenator filter coefficients stored as [a0, a1, a2]
-
-    Examples
-    --------
-    >>> from pyloudnorm import normalize
-    """
-
-    Q = 1.0 / np.sqrt(2.0)
-    A  = np.sqrt(10**(G/20.0))
-    w0 = 2.0 * np.pi * (fc / fs)
-    alpha = np.sin(w0) / (2 * Q)
-    
-    b0 =      A * ( (A+1) + (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha )
-    b1 = -2 * A * ( (A-1) + (A+1) * np.cos(w0)                          )
-    b2 =      A * ( (A+1) + (A-1) * np.cos(w0) - 2 * np.sqrt(A) * alpha )
-    a0 =            (A+1) - (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha
-    a1 =      2 * ( (A-1) - (A+1) * np.cos(w0)                          )
-    a2 =            (A+1) - (A-1) * np.cos(w0) - 2 * np.sqrt(A) * alpha
-
-    b = [b0/a0, b1/a0, b2/a0]
-    a = [a0/a0, a1/a0, a2/a0]
-
-    if plot:
-        fig = plt.figure(figsize=(5,5))
-        w, h = signal.freqz(b, a, worN=8000)
-        plt.semilogx((fs * 0.5 / np.pi) * w, 20 * np.log10(abs(h)))
-        plt.title('Pre-filter 1: High Shelving Filter')
-        plt.xlabel('Frequency [Hz]')
-        plt.ylabel('Gain [dB]')
-        plt.xlim([20, 20000])
-        plt.ylim([-10,10])
-        plt.grid(True, which='both')
-        ax = plt.axes()
-        ax.yaxis.set_major_locator(ticker.MultipleLocator(2))
-        plt.show()
-
-    return b, a
-
-def generate_high_pass_filter(fc, fs, plot=False):
-
-    Q  = 0.5
-    w0 = 2.0 * np.pi * (fc / fs)
-    alpha = np.sin(w0) / (2 * Q)
-
-    b0 =  (1 + np.cos(w0))/2
-    b1 = -(1 + np.cos(w0))
-    b2 =  (1 + np.cos(w0))/2
-    a0 =   1 + alpha
-    a1 =  -2 * np.cos(w0)
-    a2 =   1 - alpha
-
-    b = [b0, b1, b2]
-    a = [a0, a1, a2]
-
-    if plot:
-        w, h = signal.freqz(b, a, worN=8000)    
-        fig = plt.figure(figsize=(5,5))
-        plt.semilogx((fs * 0.5 / np.pi) * w, 20 * np.log10(abs(h)))
-        plt.title('Pre-filter 2: Highpass Filter')
-        plt.xlabel('Frequency [Hz]')
-        plt.ylabel('Gain [dB]')
-        plt.xlim([10, 20000])
-        plt.ylim([-30,5])
-        plt.grid(True, which='both')
-        ax = plt.axes()
-        ax.yaxis.set_major_locator(ticker.MultipleLocator(5))
-        plt.show()
-
-    return b, a
-
-def apply_K_freq_weighting(audio, fs, stage1_filter, stage2_filter):
-
-    stage1_audio = signal.lfilter(stage1_filter[0], stage1_filter[1], audio)
-    stage2_audio = signal.lfilter(stage2_filter[0], stage2_filter[1], stage1_audio)
-
-    return stage2_audio
-
 def measure_loudness(audio, fs):
     """ Measure the loudness for a signal."""
 
