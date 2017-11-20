@@ -1,46 +1,49 @@
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
+from textwrap import dedent
 from scipy import signal
 
 class IIRfilter():
     def __init__(self, Q, fc, fs, filter_type, G=0.0):
-        self.Q  = Q
-        self.fc = fc
-        self.fs = fs 
+        self.Q  = float(Q)
+        self.fc = float(fc)
+        self.fs = float(fs) 
         self.filter_type = filter_type
-        self.G  = G
+        self.G  = float(G)
         self.valid_types = {'high_shelf' : 'High Shelf Filter', 'high_pass' : 'High Pass Filter'}
+        if self.filter_type not in self.valid_types:
+            raise ValueError("Invalid filter type. Valid types: {valid_types}".format(valid_types=self.valid_types.keys()))
         self.b, self.a = self.generate_filter_coefficients()
 
     def __repr__(self):
-        info = """
+        info = ("""
         {type}
         ----------------------
         Gain         = {G} dB
         Q factor     = {Q} 
         Center freq. = {fc} Hz
-        Sample rate  = {fs} 
+        Sample rate  = {fs} Hz
         ----------------------
-        b0 = {b0}
-        b1 = {b1}
-        b2 = {b2}
-        a0 = {a0}
-        a1 = {a1}
-        a2 = {a2}
+        b0 = {_b0}
+        b1 = {_b1}
+        b2 = {_b2}
+        a0 = {_a0}
+        a1 = {_a1}
+        a2 = {_a2}
         ----------------------
-        """.format(type=self.valid_types[self.filter_type], 
+        """).format(type=self.valid_types[self.filter_type], 
         G=self.G, Q=self.Q, fc=self.fc, fs=self.fs, 
-        b0=self.b[0], b1=self.b[1], b2=self.b[2], 
-        a0=self.a[0], a1=self.a[1], a2=self.a[2])
+        _b0=self.b[0], _b1=self.b[1], _b2=self.b[2], 
+        _a0=self.a[0], _a1=self.a[1], _a2=self.a[2])
 
-        return info
+        return dedent(info)
 
     def generate_filter_coefficients(self):
         A  = np.sqrt(10**(self.G/20.0))
         w0 = 2.0 * np.pi * (self.fc / self.fs)
-        alpha = np.sin(w0) / (2 * self.Q)
-        
+        alpha = np.sin(w0) / (2.0 * self.Q)
+
         if self.filter_type == 'high_shelf':
             b0 =      A * ( (A+1) + (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha )
             b1 = -2 * A * ( (A-1) + (A+1) * np.cos(w0)                          )
@@ -48,23 +51,37 @@ class IIRfilter():
             a0 =            (A+1) - (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha
             a1 =      2 * ( (A-1) - (A+1) * np.cos(w0)                          )
             a2 =            (A+1) - (A-1) * np.cos(w0) - 2 * np.sqrt(A) * alpha
-        elif self.filter_type == 'high_pass':
+        else: # high pass filter
             b0 =  (1 + np.cos(w0))/2
             b1 = -(1 + np.cos(w0))
             b2 =  (1 + np.cos(w0))/2
             a0 =   1 + alpha
             a1 =  -2 * np.cos(w0)
             a2 =   1 - alpha
+
+        return np.array([b0, b1, b2])/a0, np.array([a0, a1, a2])/a0
+
+    def plot_magnitude(self):
+        fig = plt.figure(figsize=(9,9))
+        w, h = signal.freqz(self.b, self.a, worN=8000)
+        plt.semilogx((self.fs * 0.5 / np.pi) * w, 20 * np.log10(abs(h)))
+        plt.xlabel('Frequency [Hz]')
+        plt.ylabel('Gain [dB]')
+        if self.filter_type == 'high_shelf':
+            plt.title('Pre-filter 1: High Shelving Filter')
+            plt.xlim([20, 20000])
+            plt.ylim([-10,10])
+            plt.grid(True, which='both')
+            ax = plt.axes()
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(2))
         else:
-            raise ValueError("Invalid filter type.")
-            
-        b = [b0, b1, b2]
-        a = [a0, a1, a2]
-
-        return b, a
-
-    def plot_magnitude():
-        pass
+            plt.title('Pre-filter 2: Highpass Filter')
+            plt.xlim([10, 20000])
+            plt.ylim([-30,5])
+            plt.grid(True, which='both')
+            ax = plt.axes()
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(5))
+        plt.show()
 
 def generate_high_shelf_filter(fs, G=4.0, fc=1680.0, plot=False):
     """ Generates filter coeffcients for first stage of 2-stage pre-filtering
@@ -109,8 +126,8 @@ def generate_high_shelf_filter(fs, G=4.0, fc=1680.0, plot=False):
     a1 =      2 * ( (A-1) - (A+1) * np.cos(w0)                          )
     a2 =            (A+1) - (A-1) * np.cos(w0) - 2 * np.sqrt(A) * alpha
 
-    b = [b0, b1, b2]
-    a = [a0, a1, a2]
+    b = [b0/a0, b1/a0, b2/a0]
+    a = [a0/a0, a1/a0, a2/a0]
 
     if plot:
         fig = plt.figure(figsize=(5,5))
@@ -213,8 +230,3 @@ def measure_loudness(audio, fs):
     L_KG = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)]))
 
     return L_KG
-
-high_pass = IIRfilter(0.5, 38, 48000, 'high_pass')
-high_shelf = IIRfilter(1/np.sqrt(2.0), 1680.0, 48000, 'high_shelf', G=4.0)
-print high_pass
-print high_shelf
