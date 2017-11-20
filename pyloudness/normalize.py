@@ -83,6 +83,10 @@ class IIRfilter():
             ax.yaxis.set_major_locator(ticker.MultipleLocator(5))
         plt.show()
 
+    def apply_filter(signal):
+        return signal.lfilter(self.b, self.a, signal)
+    
+
 def generate_high_shelf_filter(fs, G=4.0, fc=1680.0, plot=False):
     """ Generates filter coeffcients for first stage of 2-stage pre-filtering
     
@@ -194,12 +198,13 @@ def measure_loudness(audio, fs):
     numChannels = audio.shape[1] # number of input channels
 
     # generate the two stages of filters
-    stage1_filter = generate_high_shelf_filter(fs, 4.0, 1680.0)
-    stage2_filter = generate_high_pass_filter(fs, 38.0)
+    stage1_filter = IIRfilter(1/np.sqrt(2), 1680, fs, 'high_shelf', G=4.0)
+    stage2_filter = IIRfilter(0.5, 38, fs, 'high_pass')
 
     # "K" Frequency Weighting - account for the acoustic respose of the head and auditory system
     for ch in range(numChannels):
-        audio[:,ch] = apply_K_freq_weighting(audio[:,ch], fs, stage1_filter, stage2_filter)
+        audio[:,ch] = stage1_filter.apply_filter(audio[:,ch])
+        audio[;,ch] = stage2_filter.apply_filter(audio[:,ch])
 
     # Gating - ensures sections of silence or ambience do not skew the measurement
 
