@@ -1,45 +1,36 @@
+from __future__ import division
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 from textwrap import dedent
-from scipy import signal
+import scipy.signal
 
 class IIRfilter():
-    """ Generates filter coeffcients for first stage of 2-stage pre-filtering
+    """ IIR Filter object to perform 2-stage pre-filtering
     
-    This method generates a high shelf filter as described in ITU-R 1770-4 (pg. 3-4)
-    This filter forms the first stage of the 2-stage pre-filtering process. The high
-    shelf filter accounts for the acoustic effects of the head, where the head is 
-    modelled as a rigid spehere. 
+    This class generates a high shelf or high pass filter as described 
+    in ITU-R 1770-4 (see pg. 3-4 of the standard). 
 
     Parameters
     ----------
-    fs : int
-        Sampling rate in samples per second.
-    G : float, optional
-        Gain of the shelf in dB.
-    fc : float, optional
-        Center frequency of the shelf in Hertz.
-    plot : bool, optional
-        Prints a plot of the filter magnatiude response.
-
-    Returns
-    -------
-    b : list of floats
-        Numerator filter coefficients stored as [b0, b1, b2]
-    a : list of floats
-        Denomenator filter coefficients stored as [a0, a1, a2]
-
-    Examples
-    --------
-    >>> from pyloudnorm import normalize
+    G : float
+        Gain of the filter in dB.
+    Q : float
+        Q of the filter.
+    fc : float
+        Center frequency of the shelf in Hz.
+    fs : float
+        Sampling rate in Hz.
+    filter_type: str
+        Shape of the filter.
     """
-    def __init__(self, Q, fc, fs, filter_type, G=0.0):
-        self.Q  = float(Q)
-        self.fc = float(fc)
-        self.fs = float(fs) 
+
+    def __init__(self, G, Q, fc, fs, filter_type):
+        self.G  = G
+        self.Q  = Q
+        self.fc = fc
+        self.fs = fs
         self.filter_type = filter_type
-        self.G  = float(G)
         self.valid_types = {'high_shelf' : 'High Shelf Filter', 'high_pass' : 'High Pass Filter'}
         if self.filter_type not in self.valid_types:
             raise ValueError("Invalid filter type. Valid types: {valid_types}".format(valid_types=self.valid_types.keys()))
@@ -69,6 +60,20 @@ class IIRfilter():
         return dedent(info)
 
     def generate_filter_coefficients(self):
+        """ Generates biquad filter coefficients using instance filter parameters. 
+
+        This method is called whenever an IIRFilter is instantiated and then sets
+        the coefficients for the filter instance. NOTE: Changing the IIRFilter 
+        instance filter paramters will not update the filter coefficents unless
+        this method is called after the modification. 
+
+        Returns
+        -------
+        b : ndarray
+            Numerator filter coefficients stored as [b0, b1, b2]
+        a : ndarray
+            Denominator filter coefficients stored as [a0, a1, a2]
+        """
         A  = np.sqrt(10**(self.G/20.0))
         w0 = 2.0 * np.pi * (self.fc / self.fs)
         alpha = np.sin(w0) / (2.0 * self.Q)
@@ -91,6 +96,13 @@ class IIRfilter():
         return np.array([b0, b1, b2])/a0, np.array([a0, a1, a2])/a0
 
     def plot_magnitude(self):
+        """ Plot the magnitude response of the filter.
+
+        This method is provided for debuging and validation of the 
+        generated filter coefficients. These plots should match those
+        as outlined in the ITU-R 1770-4 standard. 
+
+        """
         fig = plt.figure(figsize=(9,9))
         w, h = signal.freqz(self.b, self.a, worN=8000)
         plt.semilogx((self.fs * 0.5 / np.pi) * w, 20 * np.log10(abs(h)))
@@ -113,25 +125,61 @@ class IIRfilter():
         plt.show()
 
     def apply_filter(signal):
-        return signal.lfilter(self.b, self.a, signal)
+        """ Apply the IIR filter to an input signal.
+
+        Params
+        -------
+        signal : ndarrary
+            Input audio data.
+
+        Returns
+        -------
+        filtered_signal : ndarray
+            Filtered input audio.
+        """
+        return scipy.signal.lfilter(self.b, self.a, signal)
     
-def measure_loudness(audio, fs):
-    """ Measure the loudness for a signal."""
+def measure_gated_loudness(signal, fs):
+    """ Measure the gated loudness of a signal.
+    
+    Following the four stage process outlined in the ITU-R 1770-4 standard,
+    this method calculates the gated loundess of a signal in LKFS or the
+    K-weighted full-scale loudness.   
 
-    if len(audio.shape) == 1: # for mono input standardize shape
-        audio = audio.reshape((audio.shape[0],1))
+    Params
+    -------
+    signal : ndarray
+        Input multichannel audio data.
+    fs : int
+        Sampling rate of the input audio in Hz. 
 
-    numSamples  = audio.shape[0] # length of input in samples
-    numChannels = audio.shape[1] # number of input channels
+    Returns
+    -------
+    L_KG : float
+        Gated loudness of the input measured in LKFS.
+
+    Examples
+    --------
+    >>> from pyloudnorm import normalize
+    """
+
+    if len(signal.shape) == 1: # for mono input standardize shape
+        signal = signal.reshape((signal.shape[0],1))
+
+    numSamples  = signal.shape[0] # length of input in samples
+    numChannels = signal.shape[1] # number of input channels
 
     # generate the two stages of filters
     stage1_filter = IIRfilter(1/np.sqrt(2), 1680, fs, 'high_shelf', G=4.0)
     stage2_filter = IIRfilter(0.5, 38, fs, 'high_pass')
 
+    # NOTE: Every call to measure_gated_loudness() results in the creation of 
+    # filter objects. This allows for the input 
+
     # "K" Frequency Weighting - account for the acoustic respose of the head and auditory system
     for ch in range(numChannels):
-        audio[:,ch] = stage1_filter.apply_filter(audio[:,ch])
-        audio[;,ch] = stage2_filter.apply_filter(audio[:,ch])
+        signal[:,ch] = stage1_filter.apply_filter(signal[:,ch])
+        signal[;,ch] = stage2_filter.apply_filter(signal[:,ch])
 
     # Gating - ensures sections of silence or ambience do not skew the measurement
 
@@ -149,7 +197,7 @@ def measure_loudness(audio, fs):
         for j in j_range:
             l = int(np.round(T_g * (j * step    ) * fs)) # lower bound of integration (in samples)
             u = int(np.round(T_g * (j * step + 1) * fs)) # upper bound of integration (in samples)
-            z[i,j] = (1 / (T_g * fs)) * np.sum(np.square(audio[l:u,i])) # mean square and integrate
+            z[i,j] = (1 / (T_g * fs)) * np.sum(np.square(signal[l:u,i])) # mean square and integrate
            
     l = [-0.691 + 10.0 * np.log10(np.sum([G[i] * z[i,j] for i in range(numChannels)])) for j in j_range]
     
