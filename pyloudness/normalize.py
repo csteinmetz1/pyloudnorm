@@ -157,10 +157,6 @@ def measure_gated_loudness(signal, fs):
     -------
     L_KG : float
         Gated loudness of the input measured in LKFS.
-
-    Examples
-    --------
-    >>> from pyloudnorm import normalize
     """
 
     if len(signal.shape) == 1: # for mono input standardize shape
