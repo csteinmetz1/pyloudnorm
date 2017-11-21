@@ -124,7 +124,7 @@ class IIRfilter():
             ax.yaxis.set_major_locator(ticker.MultipleLocator(5))
         plt.show()
 
-    def apply_filter(signal):
+    def apply_filter(self, signal):
         """ Apply the IIR filter to an input signal.
 
         Params
@@ -166,8 +166,8 @@ def measure_gated_loudness(signal, fs):
     numChannels = signal.shape[1] # number of input channels
 
     # generate the two stages of filters
-    stage1_filter = IIRfilter(1/np.sqrt(2), 1680, fs, 'high_shelf', G=4.0)
-    stage2_filter = IIRfilter(0.5, 38, fs, 'high_pass')
+    stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1680, fs, 'high_shelf')
+    stage2_filter = IIRfilter(0.0, 0.5, 38, fs, 'high_pass')
 
     # NOTE: Every call to measure_gated_loudness() results in the creation of 
     # filter objects. This allows for the input 
@@ -175,7 +175,7 @@ def measure_gated_loudness(signal, fs):
     # "K" Frequency Weighting - account for the acoustic respose of the head and auditory system
     for ch in range(numChannels):
         signal[:,ch] = stage1_filter.apply_filter(signal[:,ch])
-        signal[;,ch] = stage2_filter.apply_filter(signal[:,ch])
+        signal[:,ch] = stage2_filter.apply_filter(signal[:,ch])
 
     # Gating - ensures sections of silence or ambience do not skew the measurement
 
