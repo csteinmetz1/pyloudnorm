@@ -1,9 +1,9 @@
 from distutils.core import setup
 
-setup(name='pyloudness',
+setup(name='pyloudnorm',
       version='0.1',
-      description='Implementation of ITU-R BS.1770-4/EBU R128 loudness algorithms in python',
+      description='Implementation of ITU-R BS.1770-4 loudness algorithm in python',
       author='Christian Steinmetz',
       author_email='cjstein@clemson.edu',
-      packages=['pyloudness'],
+      packages=['pyloudnorm'],
      )
