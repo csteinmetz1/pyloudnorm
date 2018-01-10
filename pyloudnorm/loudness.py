@@ -187,22 +187,25 @@ def measure_gated_loudness(signal, fs):
 
     z = np.ndarray(shape=(numChannels,numSamples)) # instantiate array - trasponse of input
     T = numSamples / fs # length of the input in seconds
-    j_range = np.arange(0, int(np.round((T - T_g) / (T_g * step))))
 
     for i in range(numChannels):
-        for j in j_range:
+        for j in np.arange(0, int(np.round((T - T_g) / (T_g * step)))): # iterate over total frames
             l = int(np.round(T_g * (j * step    ) * fs)) # lower bound of integration (in samples)
             u = int(np.round(T_g * (j * step + 1) * fs)) # upper bound of integration (in samples)
             z[i,j] = (1 / (T_g * fs)) * np.sum(np.square(signal[l:u,i])) # mean square and integrate
            
     l = [-0.691 + 10.0 * np.log10(np.sum([G[i] * z[i,j] for i in range(numChannels)])) for j in j_range]
     
+    # first threshold
     J_g = [j for j,l_j in enumerate(l) if l_j > Gamma_a]
     z_avg_gated = [np.mean([z[i,j] for j in J_g]) for i in range(numChannels)]
     Gamma_r = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)])) - 10.0
 
+    # second threshold gating
     J_g = [j for j,l_j in enumerate(l) if (l_j > Gamma_a and l_j > Gamma_r)]
     z_avg_gated = [np.mean([z[i,j] for j in J_g]) for i in range(numChannels)]
-    L_KG = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)]))
+    
+    # calculate final loudness measurement
+    LUFS = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)]))
 
-    return L_KG
+    return LUFS
