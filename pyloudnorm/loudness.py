@@ -159,23 +159,27 @@ def measure_gated_loudness(signal, fs):
         Gated loudness of the input measured in LKFS.
     """
 
-    if len(signal.shape) == 1: # for mono input standardize shape
-        signal = signal.reshape((signal.shape[0],1))
+        if   data.dtype == 'int64': data = data.astype('float32') / 9223372036854775807
+    elif data.dtype == 'int32': data = data.astype('float32') / 2147483647
+    elif data.dtype == 'int16': data = data.astype('float32') / 32767
 
-    numSamples  = signal.shape[0] # length of input in samples
-    numChannels = signal.shape[1] # number of input channels
+    if len(data.shape) == 1: # for mono input standardize shape
+        data = data.reshape((data.shape[0],1))
+
+    numSamples  = data.shape[0] # length of input in samples
+    numChannels = data.shape[1] # number of input channels
 
     # generate the two stages of filters
-    stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1680, fs, 'high_shelf')
+    stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1681, fs, 'high_shelf')
     stage2_filter = IIRfilter(0.0, 0.5, 38, fs, 'high_pass')
 
     # NOTE: Every call to measure_gated_loudness() results in the creation of 
-    # filter objects. This allows for the input 
+    # filter objects. This allows for the input sample rate to change on each call.
 
     # "K" Frequency Weighting - account for the acoustic respose of the head and auditory system
     for ch in range(numChannels):
-        signal[:,ch] = stage1_filter.apply_filter(signal[:,ch])
-        signal[:,ch] = stage2_filter.apply_filter(signal[:,ch])
+        data[:,ch] = stage1_filter.apply_filter(data[:,ch])
+        data[:,ch] = stage2_filter.apply_filter(data[:,ch])
 
     # Gating - ensures sections of silence or ambience do not skew the measurement
 
@@ -187,21 +191,23 @@ def measure_gated_loudness(signal, fs):
 
     z = np.ndarray(shape=(numChannels,numSamples)) # instantiate array - trasponse of input
     T = numSamples / fs # length of the input in seconds
+    j_range = np.arange(0, int(np.round((T - T_g) / (T_g * step))))
 
     for i in range(numChannels):
-        for j in np.arange(0, int(np.round((T - T_g) / (T_g * step)))): # iterate over total frames
-            l = int(np.round(T_g * (j * step    ) * fs)) # lower bound of integration (in samples)
-            u = int(np.round(T_g * (j * step + 1) * fs)) # upper bound of integration (in samples)
-            z[i,j] = (1 / (T_g * fs)) * np.sum(np.square(signal[l:u,i])) # mean square and integrate
-           
+        for j in j_range: # iterate over total frames
+            l = int(T_g * (j * step    ) * fs) # lower bound of integration (in samples)
+            u = int(T_g * (j * step + 1) * fs) # upper bound of integration (in samples)
+            z[i,j] = (1 / (T_g * fs)) * np.sum(np.square(data[l:u,i])) # mean square and integrate
+
     l = [-0.691 + 10.0 * np.log10(np.sum([G[i] * z[i,j] for i in range(numChannels)])) for j in j_range]
     
-    # first threshold
+    # find blocks above absolute threshold
     J_g = [j for j,l_j in enumerate(l) if l_j > Gamma_a]
+
     z_avg_gated = [np.mean([z[i,j] for j in J_g]) for i in range(numChannels)]
     Gamma_r = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)])) - 10.0
 
-    # second threshold gating
+    # find blocks above relative threshold 
     J_g = [j for j,l_j in enumerate(l) if (l_j > Gamma_a and l_j > Gamma_r)]
     z_avg_gated = [np.mean([z[i,j] for j in J_g]) for i in range(numChannels)]
     
