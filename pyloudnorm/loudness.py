@@ -36,7 +36,7 @@ class IIRfilter():
             raise ValueError("Invalid filter type. Valid types: {valid_types}".format(valid_types=self.valid_types.keys()))
         self.b, self.a = self.generate_filter_coefficients()
 
-    def __repr__(self):
+    def __str__(self):
         info = ("""
         {type}
         ----------------------
@@ -104,7 +104,7 @@ class IIRfilter():
 
         """
         fig = plt.figure(figsize=(9,9))
-        w, h = signal.freqz(self.b, self.a, worN=8000)
+        w, h = scipy.signal.freqz(self.b, self.a, worN=8000)
         plt.semilogx((self.fs * 0.5 / np.pi) * w, 20 * np.log10(abs(h)))
         plt.xlabel('Frequency [Hz]')
         plt.ylabel('Gain [dB]')
@@ -124,12 +124,12 @@ class IIRfilter():
             ax.yaxis.set_major_locator(ticker.MultipleLocator(5))
         plt.show()
 
-    def apply_filter(self, signal):
+    def apply_filter(self, data):
         """ Apply the IIR filter to an input signal.
 
         Params
         -------
-        signal : ndarrary
+        data : ndarrary
             Input audio data.
 
         Returns
@@ -137,9 +137,9 @@ class IIRfilter():
         filtered_signal : ndarray
             Filtered input audio.
         """
-        return scipy.signal.lfilter(self.b, self.a, signal)
-    
-def measure_gated_loudness(signal, fs):
+        return scipy.signal.lfilter(self.b, self.a, data)
+      
+def measure_gated_loudness(data, fs, verbose=False):
     """ Measure the gated loudness of a signal.
     
     Following the four stage process outlined in the ITU-R 1770-4 standard,
@@ -148,7 +148,7 @@ def measure_gated_loudness(signal, fs):
 
     Params
     -------
-    signal : ndarray
+    data : ndarray
         Input multichannel audio data.
     fs : int
         Sampling rate of the input audio in Hz. 
@@ -156,30 +156,28 @@ def measure_gated_loudness(signal, fs):
     Returns
     -------
     L_KG : float
-        Gated loudness of the input measured in LKFS.
+        Gated loudness of the input measured in dB LKFS.
     """
+    input_data = data.copy()
 
-        if   data.dtype == 'int64': data = data.astype('float32') / 9223372036854775807
-    elif data.dtype == 'int32': data = data.astype('float32') / 2147483647
-    elif data.dtype == 'int16': data = data.astype('float32') / 32767
-
-    if len(data.shape) == 1: # for mono input standardize shape
-        data = data.reshape((data.shape[0],1))
-
-    numSamples  = data.shape[0] # length of input in samples
-    numChannels = data.shape[1] # number of input channels
+    numSamples  = input_data.shape[0] # length of input in samples
+    numChannels = input_data.shape[1] # number of input channels
 
     # generate the two stages of filters
-    stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1681, fs, 'high_shelf')
-    stage2_filter = IIRfilter(0.0, 0.5, 38, fs, 'high_pass')
+    stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1681.9, fs, 'high_shelf')
+    stage2_filter = IIRfilter(0.0, 0.5, 38.1, fs, 'high_pass')
 
     # NOTE: Every call to measure_gated_loudness() results in the creation of 
     # filter objects. This allows for the input sample rate to change on each call.
 
+    if verbose:
+        stage1_filter.plot_magnitude()
+        stage2_filter.plot_magnitude()
+
     # "K" Frequency Weighting - account for the acoustic respose of the head and auditory system
     for ch in range(numChannels):
-        data[:,ch] = stage1_filter.apply_filter(data[:,ch])
-        data[:,ch] = stage2_filter.apply_filter(data[:,ch])
+        input_data[:,ch] = stage1_filter.apply_filter(input_data[:,ch])
+        input_data[:,ch] = stage2_filter.apply_filter(input_data[:,ch])
 
     # Gating - ensures sections of silence or ambience do not skew the measurement
 
@@ -187,17 +185,21 @@ def measure_gated_loudness(signal, fs):
     T_g = 0.4 # 400 ms gating block
     Gamma_a = -70.0 # -70 LKFS = absolute loudness threshold
     overlap = 0.75 # overlap of 75% of the block duration
-    step = 1 - overlap
+    step = 1.0 - overlap
 
-    z = np.ndarray(shape=(numChannels,numSamples)) # instantiate array - trasponse of input
+    z = np.zeros(shape=(numChannels,numSamples)) # instantiate array - trasponse of input
     T = numSamples / fs # length of the input in seconds
-    j_range = np.arange(0, int(np.round((T - T_g) / (T_g * step))))
+    numBlocks = int(np.round(((T - T_g) / (T_g * step)))+1)
+    j_range = np.arange(0, numBlocks)
 
     for i in range(numChannels):
         for j in j_range: # iterate over total frames
             l = int(T_g * (j * step    ) * fs) # lower bound of integration (in samples)
             u = int(T_g * (j * step + 1) * fs) # upper bound of integration (in samples)
-            z[i,j] = (1 / (T_g * fs)) * np.sum(np.square(data[l:u,i])) # mean square and integrate
+            
+            z[i,j] = (1.0 / (T_g * fs)) * np.sum(np.square(input_data[l:u,i])) # mean square and integrate
+    
+    #print(z[0,0])
 
     l = [-0.691 + 10.0 * np.log10(np.sum([G[i] * z[i,j] for i in range(numChannels)])) for j in j_range]
     

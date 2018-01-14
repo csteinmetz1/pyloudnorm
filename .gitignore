@@ -1,5 +1,6 @@
 build/
+pyloudnorm/test_scripts
+pyloudnorm/test_audio
 *.pyc
-test.py
-pyloudness/test.py
+.vscode
 
