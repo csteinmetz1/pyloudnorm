@@ -4,6 +4,7 @@ import matplotlib.ticker as ticker
 import numpy as np
 from textwrap import dedent
 import scipy.signal
+import warnings
 
 class IIRfilter():
     """ IIR Filter object to perform 2-stage pre-filtering
@@ -74,7 +75,7 @@ class IIRfilter():
         a : ndarray
             Denominator filter coefficients stored as [a0, a1, a2]
         """
-        A  = np.sqrt(10**(self.G/20.0))
+        A  = 10**(self.G/40.0)
         w0 = 2.0 * np.pi * (self.fc / self.fs)
         alpha = np.sin(w0) / (2.0 * self.Q)
 
@@ -199,21 +200,25 @@ def measure_gated_loudness(data, fs, verbose=False):
             
             z[i,j] = (1.0 / (T_g * fs)) * np.sum(np.square(input_data[l:u,i])) # mean square and integrate
     
-    #print(z[0,0])
-
+    #with np.errstate(divide='ignore'):
     l = [-0.691 + 10.0 * np.log10(np.sum([G[i] * z[i,j] for i in range(numChannels)])) for j in j_range]
     
     # find blocks above absolute threshold
-    J_g = [j for j,l_j in enumerate(l) if l_j > Gamma_a]
+    J_g = [j for j,l_j in enumerate(l) if l_j >= Gamma_a]
 
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
     z_avg_gated = [np.mean([z[i,j] for j in J_g]) for i in range(numChannels)]
     Gamma_r = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)])) - 10.0
 
     # find blocks above relative threshold 
     J_g = [j for j,l_j in enumerate(l) if (l_j > Gamma_a and l_j > Gamma_r)]
-    z_avg_gated = [np.mean([z[i,j] for j in J_g]) for i in range(numChannels)]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        z_avg_gated = np.nan_to_num([np.mean([z[i,j] for j in J_g]) for i in range(numChannels)])
     
     # calculate final loudness measurement
+    with np.errstate(divide='ignore'):
     LUFS = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)]))
 
     return LUFS
