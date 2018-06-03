@@ -165,8 +165,8 @@ def measure_gated_loudness(data, fs, verbose=False):
     numChannels = input_data.shape[1] # number of input channels
 
     # generate the two stages of filters
-    stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1681.9, fs, 'high_shelf')
-    stage2_filter = IIRfilter(0.0, 0.5, 38.1, fs, 'high_pass')
+    stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1500.0, fs, 'high_shelf')
+    stage2_filter = IIRfilter(0.0, 0.5, 53.8, fs, 'high_pass')
 
     # NOTE: Every call to measure_gated_loudness() results in the creation of 
     # filter objects. This allows for the input sample rate to change on each call.
