@@ -67,6 +67,7 @@ scipy.io.wavfile.write("loudness_normalized_audio.wav", rate, loudness_normalize
 
 ## Todo
 - Think about how to handle inputs with length shorter than 400 ms block size
-- Add support for momentary, short term loudness, and loundess range [ref](https://tech.ebu.ch/docs/tech/tech3341.pdf)
+- Add support for momentary, short term loudness, and loundess range (see [this spec](https://tech.ebu.ch/docs/tech/tech3341.pdf))
 - Add true peak measurement 
-- Build tests
+- Develop unit tests - include audio files - check potential changes in loudness measurements
+- Add additional filters (see [this paper](http://www.aes.org/e-lib/browse.cfm?elib=19215&rndx=851198))
