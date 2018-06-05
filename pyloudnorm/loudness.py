@@ -166,7 +166,7 @@ def measure_gated_loudness(data, fs, verbose=False):
 
     # generate the two stages of filters
     stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1500.0, fs, 'high_shelf')
-    stage2_filter = IIRfilter(0.0, 0.5, 53.8, fs, 'high_pass')
+    stage2_filter = IIRfilter(0.0, 0.5, 38.0, fs, 'high_pass')
 
     # NOTE: Every call to measure_gated_loudness() results in the creation of 
     # filter objects. This allows for the input sample rate to change on each call.
@@ -186,39 +186,42 @@ def measure_gated_loudness(data, fs, verbose=False):
     T_g = 0.4 # 400 ms gating block
     Gamma_a = -70.0 # -70 LKFS = absolute loudness threshold
     overlap = 0.75 # overlap of 75% of the block duration
-    step = 1.0 - overlap
+    step = 1.0 - overlap # step size by percentage
 
     z = np.zeros(shape=(numChannels,numSamples)) # instantiate array - trasponse of input
     T = numSamples / fs # length of the input in seconds
-    numBlocks = int(np.round(((T - T_g) / (T_g * step)))+1)
-    j_range = np.arange(0, numBlocks)
+    numBlocks = int(np.round(((T - T_g) / (T_g * step)))+1) # total number of gated blocks (see end of eq. 3)
+    j_range = np.arange(0, numBlocks) # indexed list of total blocks
 
-    for i in range(numChannels):
+    for i in range(numChannels): # iterate over input channels
         for j in j_range: # iterate over total frames
             l = int(T_g * (j * step    ) * fs) # lower bound of integration (in samples)
             u = int(T_g * (j * step + 1) * fs) # upper bound of integration (in samples)
-            
-            z[i,j] = (1.0 / (T_g * fs)) * np.sum(np.square(input_data[l:u,i])) # mean square and integrate
+            # caluate mean square of the filtered for each block (see eq. 1)
+            z[i,j] = (1.0 / (T_g * fs)) * np.sum(np.square(input_data[l:u,i]))
     
-    #with np.errstate(divide='ignore'):
+    # loudness for each jth block (see eq. 4)
     l = [-0.691 + 10.0 * np.log10(np.sum([G[i] * z[i,j] for i in range(numChannels)])) for j in j_range]
     
-    # find blocks above absolute threshold
+    # find gating block indices above absolute threshold
     J_g = [j for j,l_j in enumerate(l) if l_j >= Gamma_a]
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
-    z_avg_gated = [np.mean([z[i,j] for j in J_g]) for i in range(numChannels)]
+        # calculate the average of z[i,j] as show in eq. 5
+        z_avg_gated = [np.mean([z[i,j] for j in J_g]) for i in range(numChannels)]
+    # calculate the relative threshold value (see eq. 6)
     Gamma_r = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)])) - 10.0
 
-    # find blocks above relative threshold 
-    J_g = [j for j,l_j in enumerate(l) if (l_j > Gamma_a and l_j > Gamma_r)]
+    # find gating block indices above relative and absolute thresholds  (end of eq. 7)
+    J_g = [j for j,l_j in enumerate(l) if (l_j > Gamma_r and l_j > Gamma_a)]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
+        # calculate the average of z[i,j] as show in eq. 7 with blocks above both thresholds
         z_avg_gated = np.nan_to_num([np.mean([z[i,j] for j in J_g]) for i in range(numChannels)])
     
-    # calculate final loudness measurement
+    # calculate final loudness gated loudness (see eq. 7)
     with np.errstate(divide='ignore'):
-    LUFS = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)]))
+        LUFS = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)]))
 
     return LUFS
