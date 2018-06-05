@@ -70,4 +70,6 @@ scipy.io.wavfile.write("loudness_normalized_audio.wav", rate, loudness_normalize
 - Add support for momentary, short term loudness, and loundess range (see [this spec](https://tech.ebu.ch/docs/tech/tech3341.pdf))
 - Add true peak measurement 
 - Develop unit tests - include audio files - check potential changes in loudness measurements
+- Create `Meter` class (control over filtering and gating block size)
 - Add additional filters (see [this paper](http://www.aes.org/e-lib/browse.cfm?elib=19215&rndx=851198))
+- Add control for gating block size
