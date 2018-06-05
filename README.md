@@ -8,7 +8,7 @@ Based on the standard which can be found [here](https://www.itu.int/dms_pubrec/i
 # get pyloudness source
 git clone https://github.com/csteinmetz1/pyloudnorm.git
 
-# run setup
+# run setup from new directory
 python setup.py install
 ```
 ## Usage
@@ -64,3 +64,9 @@ scipy.io.wavfile.write("loudness_normalized_audio.wav", rate, loudness_normalize
 - **SciPy** ([https://www.scipy.org/](https://www.scipy.org/))
 - **NumPy** ([http://www.numpy.org/](http://www.numpy.org/))
 - **Matplotlib** ([https://matplotlib.org/](https://matplotlib.org/))
+
+## Todo
+- Think about how to handle inputs with length shorter than 400 ms block size
+- Add support for momentary, short term loudness, and loundess range [ref](https://tech.ebu.ch/docs/tech/tech3341.pdf)
+- Add true peak measurement 
+- Build tests
