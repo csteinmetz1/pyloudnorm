@@ -5,6 +5,7 @@ import numpy as np
 from textwrap import dedent
 import scipy.signal
 import warnings
+from . import util
 
 class Meter():
     """ Meter object which defines how the meter operates
@@ -13,7 +14,7 @@ class Meter():
 
     Parameters
     ----------
-    fs : float
+    rate : float
         Sampling rate in Hz.
     filter_class : str
         Class of weigthing filter used.
@@ -21,30 +22,30 @@ class Meter():
         Gating block size in seconds.
     """
 
-    def __init__(self, fs, filter_class="K-weighting", block_size=0.400):
+    def __init__(self, rate, filter_class="K-weighting", block_size=0.400):
 
-        self.fs = fs
+        self.rate = rate
         self.filter_class = filter_class
         self.block_size = block_size
         self.filters = {} # dict to store frequency weighting filters
 
         if   filter_class == "K-weighting":
-            self.filters['high_shelf'] = IIRfilter(4.0, 1/np.sqrt(2), 1500.0, fs, 'high_shelf')
-            self.filters['high_pass'] = IIRfilter(0.0, 0.5, 38.0, fs, 'high_pass')
+            self.filters['high_shelf'] = IIRfilter(4.0, 1/np.sqrt(2), 1500.0, rate, 'high_shelf')
+            self.filters['high_pass'] = IIRfilter(0.0, 0.5, 38.0, rate, 'high_pass')
         elif filter_class == "Fenton/Lee 1":
-            self.filters['high_shelf'] = IIRfilter(5.0, 1/np.sqrt(2), 1500.0, fs, 'high_shelf')
-            self.filters['high_pass'] = IIRfilter(0.0, 0.5, 130.0, fs, 'high_pass')
-            self.filters['peaking'] = IIRfilter(0.0, 1/np.sqrt(2), 500.0, fs, 'peaking')
+            self.filters['high_shelf'] = IIRfilter(5.0, 1/np.sqrt(2), 1500.0, rate, 'high_shelf')
+            self.filters['high_pass'] = IIRfilter(0.0, 0.5, 130.0, rate, 'high_pass')
+            self.filters['peaking'] = IIRfilter(0.0, 1/np.sqrt(2), 500.0, rate, 'peaking')
         elif filter_class == "Fenton/Lee 2":
-            self.stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1500.0, fs, 'high_shelf')
-            self.stage2_filter = IIRfilter(0.0, 0.5, 38.0, fs, 'high_pass')
+            self.stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1500.0, rate, 'high_shelf')
+            self.stage2_filter = IIRfilter(0.0, 0.5, 38.0, rate, 'high_pass')
         elif filter_class == "Dash et al.":
-            self.filters['high_pass'] = IIRfilter(0.0, 0.375, 149.0, fs, 'high_pass')
-            self.filters['notch'] = IIRfilter(3.4, 1/np.sqrt(2), 1500.0, fs, 'notch')
+            self.filters['high_pass'] = IIRfilter(0.0, 0.375, 149.0, rate, 'high_pass')
+            self.filters['notch'] = IIRfilter(3.4, 1/np.sqrt(2), 1500.0, rate, 'notch')
         else:
             raise ValueError("Invalid filter class:", filter_class)
 
-    def measure_gated_loudness(self, data, verbose=False):
+    def measure_gated_loudness(self, data, channels=1, verbose=False):
         """ Measure the gated loudness of a signal.
         
         Following the four stage process outlined in the ITU-R 1770-4 standard,
@@ -55,7 +56,7 @@ class Meter():
         -------
         data : ndarray
             Input multichannel audio data.
-        fs : int
+        rate : int
             Sampling rate of the input audio in Hz. 
 
         Returns
@@ -64,11 +65,15 @@ class Meter():
             Gated loudness of the input measured in dB LKFS.
         """
         input_data = data.copy()
+        util.valid_audio(input_data, self.rate, self.block_size)
 
-        numSamples  = input_data.shape[0] # length of input in samples
-        numChannels = input_data.shape[1] # number of input channels
+        if input_data.ndim == 1:
+            input_data = np.reshape(input_data, (input_data.shape[0], 1))
 
-        # Apply Frequency weighting filter - account for the acoustic respose of the head and auditory system
+        numChannels = input_data.shape[1]        
+        numSamples  = input_data.shape[0]
+
+        # Apply frequency weighting filter - account for the acoustic respose of the head and auditory system
         for filter_class, filter_stage in self.filters.items():
             for ch in range(numChannels):
                 input_data[:,ch] = filter_stage.apply_filter(input_data[:,ch])
@@ -82,16 +87,16 @@ class Meter():
         step = 1.0 - overlap # step size by percentage
 
         z = np.zeros(shape=(numChannels,numSamples)) # instantiate array - trasponse of input
-        T = numSamples / self.fs # length of the input in seconds
+        T = numSamples / self.rate # length of the input in seconds
         numBlocks = int(np.round(((T - T_g) / (T_g * step)))+1) # total number of gated blocks (see end of eq. 3)
         j_range = np.arange(0, numBlocks) # indexed list of total blocks
 
         for i in range(numChannels): # iterate over input channels
             for j in j_range: # iterate over total frames
-                l = int(T_g * (j * step    ) * self.fs) # lower bound of integration (in samples)
-                u = int(T_g * (j * step + 1) * self.fs) # upper bound of integration (in samples)
+                l = int(T_g * (j * step    ) * self.rate) # lower bound of integration (in samples)
+                u = int(T_g * (j * step + 1) * self.rate) # upper bound of integration (in samples)
                 # caluate mean square of the filtered for each block (see eq. 1)
-                z[i,j] = (1.0 / (T_g * self.fs)) * np.sum(np.square(input_data[l:u,i]))
+                z[i,j] = (1.0 / (T_g * self.rate)) * np.sum(np.square(input_data[l:u,i]))
         
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -135,21 +140,18 @@ class IIRfilter():
         Q of the filter.
     fc : float
         Center frequency of the shelf in Hz.
-    fs : float
+    rate : float
         Sampling rate in Hz.
     filter_type: str
         Shape of the filter.
     """
 
-    def __init__(self, G, Q, fc, fs, filter_type):
+    def __init__(self, G, Q, fc, rate, filter_type):
         self.G  = G
         self.Q  = Q
         self.fc = fc
-        self.fs = fs
+        self.rate = rate
         self.filter_type = filter_type
-        self.valid_types = {'high_shelf' : 'High Shelf Filter', 'high_pass' : 'High Pass Filter'}
-        if self.filter_type not in self.valid_types:
-            raise ValueError("Invalid filter type. Valid types: {valid_types}".format(valid_types=self.valid_types.keys()))
         self.b, self.a = self.generate_filter_coefficients()
 
     def __str__(self):
@@ -159,7 +161,7 @@ class IIRfilter():
         Gain         = {G} dB
         Q factor     = {Q} 
         Center freq. = {fc} Hz
-        Sample rate  = {fs} Hz
+        Sample rate  = {rate} Hz
         ----------------------
         b0 = {_b0}
         b1 = {_b1}
@@ -169,7 +171,7 @@ class IIRfilter():
         a2 = {_a2}
         ----------------------
         """).format(type=self.valid_types[self.filter_type], 
-        G=self.G, Q=self.Q, fc=self.fc, fs=self.fs, 
+        G=self.G, Q=self.Q, fc=self.fc, rate=self.rate, 
         _b0=self.b[0], _b1=self.b[1], _b2=self.b[2], 
         _a0=self.a[0], _a1=self.a[1], _a2=self.a[2])
 
@@ -191,7 +193,7 @@ class IIRfilter():
             Denominator filter coefficients stored as [a0, a1, a2]
         """
         A  = 10**(self.G/40.0)
-        w0 = 2.0 * np.pi * (self.fc / self.fs)
+        w0 = 2.0 * np.pi * (self.fc / self.rate)
         alpha = np.sin(w0) / (2.0 * self.Q)
 
         if self.filter_type == 'high_shelf':
@@ -208,13 +210,15 @@ class IIRfilter():
             a0 =   1 + alpha / A
             a1 =  -2 * np.cos(w0)
             a2 =   1 - alpha / A
-        else: # high pass filter
+        elif self.filter_type == 'high_pass':
             b0 =  (1 + np.cos(w0))/2
             b1 = -(1 + np.cos(w0))
             b2 =  (1 + np.cos(w0))/2
             a0 =   1 + alpha
             a1 =  -2 * np.cos(w0)
             a2 =   1 - alpha
+        else:
+            raise ValueError("Invalid filter typer", self.filter_type)
 
         return np.array([b0, b1, b2])/a0, np.array([a0, a1, a2])/a0
 
@@ -228,7 +232,7 @@ class IIRfilter():
         """
         fig = plt.figure(figsize=(9,9))
         w, h = scipy.signal.freqz(self.b, self.a, worN=8000)
-        plt.semilogx((self.fs * 0.5 / np.pi) * w, 20 * np.log10(abs(h)))
+        plt.semilogx((self.rate * 0.5 / np.pi) * w, 20 * np.log10(abs(h)))
         plt.xlabel('Frequency [Hz]')
         plt.ylabel('Gain [dB]')
         if self.filter_type == 'high_shelf':
