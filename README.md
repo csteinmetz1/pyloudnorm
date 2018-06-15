@@ -1,14 +1,16 @@
 # pyloudnorm  [![Build Status](https://travis-ci.org/csteinmetz1/pyloudnorm.svg?branch=master)](https://travis-ci.org/csteinmetz1/pyloudnorm)
 Flexible audio loudness meter in Python. 
 
-Includes implementation of [ITU-R BS.1770-4](https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-E.pdf). <br/>
-Momentary, Short-term, and Integrated measurements given by [EBU R128](https://tech.ebu.ch/docs/tech/tech3341.pdf). <br/>
-Allows control over gating block size and frequency weighting filters if desired. 
+Implementation of [ITU-R BS.1770-4](https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-E.pdf). <br/>
+Allows control over gating block size and frequency weighting filters for additional control. 
 
 ## Installation
 ```
 # get pyloudness source
 git clone https://github.com/csteinmetz1/pyloudnorm.git
+
+# install dependancies
+pip install -r requirements.txt
 
 # run setup from new directory
 python setup.py install
@@ -24,7 +26,7 @@ import pyloudnorm
 
 data, rate = sf.read("test.wav") # load audio
 meter = pyloudnorm.loudness.Meter(rate) # create BS.1770 meter
-loudness = meter.integrated(data) # measure loudness
+loudness = meter.integrated_loudness(data) # measure loudness
 ```
 
 ### Loudness normalize and peak normalize audio files
@@ -38,10 +40,14 @@ import pyloudnorm
 data, rate = sf.read("test.wav")
 
 # peak normalize audio to -1 dB
-peak_normalized_audio = pyloudnorm.normalize.peak(data, rate, -1.0)
+peak_normalized_audio = pyloudnorm.normalize.peak(data, -1.0)
+
+# measure the loudness first 
+meter = pyloudnorm.loudness.Meter(rate) # create BS.1770 meter
+loudness = meter.integrated_loudness(data)
 
 # loudness normalize audio to -12 dB LUFS
-loudness_normalized_audio = pyloudnorm.normalize.loudness(data, rate, -12.0)
+loudness_normalized_audio = pyloudnorm.normalize.loudness(data, loudness, -12.0)
 ```
 
 ## Dependancies
@@ -51,7 +57,6 @@ loudness_normalized_audio = pyloudnorm.normalize.loudness(data, rate, -12.0)
 - **PySoundFile** ([https://github.com/bastibe/SoundFile](https://github.com/bastibe/SoundFile))
 
 ## Todo
-- Add support for momentary, short term loudness, and loundess range (see [this spec](https://tech.ebu.ch/docs/tech/tech3341.pdf))
 - Add true peak measurement 
 - Develop unit tests - include audio files - check potential changes in loudness measurements
 - Add additional filters (see [this paper](http://www.aes.org/e-lib/browse.cfm?elib=19215&rndx=851198))

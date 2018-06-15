@@ -18,6 +18,10 @@ class Meter():
         Sampling rate in Hz.
     filter_class : str
         Class of weigthing filter used.
+        - 'K-weighting'
+        - 'Fenton/Lee 1'
+        - 'Fenton/Lee 2'
+        - 'Dash et al.'
     block_size : float
         Gating block size in seconds.
     """
@@ -36,7 +40,7 @@ class Meter():
             self.filters['high_shelf'] = IIRfilter(5.0, 1/np.sqrt(2), 1500.0, rate, 'high_shelf')
             self.filters['high_pass'] = IIRfilter(0.0, 0.5, 130.0, rate, 'high_pass')
             self.filters['peaking'] = IIRfilter(0.0, 1/np.sqrt(2), 500.0, rate, 'peaking')
-        elif filter_class == "Fenton/Lee 2":
+        elif filter_class == "Fenton/Lee 2": # not yet implemented 
             self.stage1_filter = IIRfilter(4.0, 1/np.sqrt(2), 1500.0, rate, 'high_shelf')
             self.stage2_filter = IIRfilter(0.0, 0.5, 38.0, rate, 'high_pass')
         elif filter_class == "Dash et al.":
@@ -46,11 +50,11 @@ class Meter():
             raise ValueError("Invalid filter class:", filter_class)
 
     def integrated_loudness(self, data, verbose=False):
-        """ Measure the gated loudness of a signal.
+        """ Measure the integrated gated loudness of a signal.
         
-        Following the four stage process outlined in the ITU-R 1770-4 standard,
-        this method calculates the gated loundess of a signal in LKFS or the
-        K-weighted full-scale loudness.   
+        Uses the weighting filters and block size defined by the meter
+        the integrated loudness is measured based upon the gating algorithm
+        defined in the ITU-R BS.1770-4 specification. 
 
         Params
         -------
