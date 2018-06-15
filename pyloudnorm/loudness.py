@@ -45,7 +45,7 @@ class Meter():
         else:
             raise ValueError("Invalid filter class:", filter_class)
 
-    def measure_gated_loudness(self, data, channels=1, verbose=False):
+    def integrated_loudness(self, data, verbose=False):
         """ Measure the gated loudness of a signal.
         
         Following the four stage process outlined in the ITU-R 1770-4 standard,
@@ -56,13 +56,13 @@ class Meter():
         -------
         data : ndarray
             Input multichannel audio data.
-        rate : int
-            Sampling rate of the input audio in Hz. 
+        verbose : bool
+            Print debug information to the terminal 
 
         Returns
         -------
-        L_KG : float
-            Gated loudness of the input measured in dB LKFS.
+        LUFS : float
+            Integrated gated loudness of the input measured in dB LUFS.
         """
         input_data = data.copy()
         util.valid_audio(input_data, self.rate, self.block_size)
