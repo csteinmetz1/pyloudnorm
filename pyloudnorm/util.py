@@ -1,42 +1,37 @@
-def validate_input_data(data, fs):
+import numpy as np
+
+def valid_audio(data, rate, block_size):
     """ Validate input audio data.
     
-    Conform input data to floating point audio data bewteen -1 and 1.
-    Call this method before calcuating loudness or performing
-    normalization if input data is a non-floating point type. (This is
-    the case when using scipy to read .wav files)   
+    Ensure input is numpy array of floating point data bewteen -1 and 1
 
     Params
     -------
     data : ndarray
-        Input multichannel audio data.
-    fs : int
-        Sampling rate of the input audio in Hz. 
+        Input audio data
+    rate : int
+        Sampling rate of the input audio in Hz
+    block_size : int
+        Analysis block size in seconds 
+    channels : int
+        Number of input audio channels
 
     Returns
     -------
-    output_data : ndarray
-        Floating point audio data.
+    valid : bool
+        True if valid audio
+        
     """
-    # for mono input standardize shape
-    if len(data.shape) == 1: 
-        data = data.reshape((data.shape[0],1))
+    if not isinstance(data, np.ndarray):
+        raise ValueError("Data must be of type numpy.ndarray")
+    
+    if not np.issubdtype(data.dtype, np.floating):
+        raise ValueError("Data must be floating point")
 
-    valid_dtypes = ['int8', 'int16', 'int32', 'int64',
-                    'float16', 'float32', 'float64']
+    if data.ndim == 2 and data.shape[1] > 5:
+        raise ValueError("Audio must have five channels or less")
 
-    if data.dtype not in valid_dtypes:
-        raise RuntimeError("Invalid input ndarray dtype. Valid input dtypes are", valid_dtypes)
-
-    if   data.dtype == 'int64': 
-        data = data.astype('float64') / 9223372036854775807.0
-    elif data.dtype == 'int32': 
-        data = data.astype('float32') / 2147483647.0
-    elif data.dtype == 'int16': 
-        data = data.astype('float32') / 32767.0
-    elif data.dtype == 'int8':
-        data = data.astype('float32') / 127.0
-    elif data.dtype == 'float16':
-        data = data.astype('float32')
-
-    return data
+    if data.shape[0] < block_size * rate:
+        raise ValueError("Audio must be have length greater than the block size")
+    
+    return True

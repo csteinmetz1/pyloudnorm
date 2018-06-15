@@ -1,0 +1,16 @@
+language: python
+
+notifications:
+  email: false
+
+python:
+  - 2.7
+  - 3.5
+  - 3.6
+
+install:
+  - pip install -r requirements.txt
+  - pip install -e .
+
+script:
+  - pytest

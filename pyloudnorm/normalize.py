@@ -3,7 +3,7 @@ import numpy as np
 import scipy.io.wavfile
 import pyloudnorm.loudness
 
-def peak(data, fs, target_peak):
+def peak(data, target_peak):
     """ Peak normalize a signal.
     
     Normalize an input signal to a user specifed peak amplitude.   
@@ -12,8 +12,6 @@ def peak(data, fs, target_peak):
     -------
     data : ndarray
         Input multichannel audio data.
-    fs : int
-        Sampling rate of the input audio in Hz. 
     peak : float
         Desired peak amplitude in dB.
 
@@ -34,7 +32,7 @@ def peak(data, fs, target_peak):
         warnings.warn("Possible clipped samples in output.")
     return output
 
-def loudness(data, fs, target_loudness):
+def loudness(data, input_loudness, target_loudness):
     """ Loudness normalize a signal.
     
     Normalize an input signal to a user loudness in dB LKFS.   
@@ -52,10 +50,7 @@ def loudness(data, fs, target_loudness):
     -------
     output_data : ndarray
         Loudness normalized output data.
-    """
-    # measure loudness of input
-    input_loudness = pyloudnorm.loudness.measure_gated_loudness(data, fs)
-    
+    """    
     # calculate the gain needed to scale to the desired loudness level
     delta_loudness = target_loudness - input_loudness
     gain = np.power(10.0, delta_loudness/20.0)
