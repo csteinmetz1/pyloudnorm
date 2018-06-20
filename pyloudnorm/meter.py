@@ -131,10 +131,11 @@ class Meter():
         return LUFS
 
 class IIRfilter():
-    """ IIR Filter object to perform 2-stage pre-filtering
+    """ IIR Filter object to pre-filtering
     
-    This class generates a high shelf or high pass filter as described 
-    in ITU-R 1770-4 (see pg. 3-4 of the standard). 
+    This class allows for the generation of various IIR filters
+	in order to apply different frequency weighting to audio data
+	before measuring the loudness. 
 
     Parameters
     ----------

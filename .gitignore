@@ -1,6 +1,5 @@
 build/
-pyloudnorm/test_scripts
-pyloudnorm/test_audio
+junk/
 *.pyc
 .vscode
 
