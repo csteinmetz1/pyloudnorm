@@ -1,9 +1,8 @@
 import warnings
 import numpy as np
 import scipy.io.wavfile
-import pyloudnorm.loudness
 
-def peak(data, target_peak):
+def peak(data, target):
     """ Peak normalize a signal.
     
     Normalize an input signal to a user specifed peak amplitude.   
@@ -12,24 +11,25 @@ def peak(data, target_peak):
     -------
     data : ndarray
         Input multichannel audio data.
-    peak : float
+    target : float
         Desired peak amplitude in dB.
 
     Returns
     -------
-    output_data : ndarray
+    output : ndarray
         Peak normalized output data.
     """
     # find the amplitude of the largest peak
     current_peak = np.max(np.abs(data))
 
     # calculate the gain needed to scale to the desired peak level
-    gain = np.power(10.0, target_peak/20.0) / current_peak
+    gain = np.power(10.0, target/20.0) / current_peak
     output = gain * data
     
     # check for potentially clipped samples
     if np.max(np.abs(output)) >= 1.0:
         warnings.warn("Possible clipped samples in output.")
+
     return output
 
 def loudness(data, input_loudness, target_loudness):
@@ -41,14 +41,14 @@ def loudness(data, input_loudness, target_loudness):
     -------
     data : ndarray
         Input multichannel audio data.
-    fs : int
-        Sampling rate of the input audio in Hz. 
-    target_loudness :
-        Desired loudness in dB LKFS.
+    input_loudness : float
+        Loudness of the input in dB LUFS. 
+    target_loudness : float
+        Target loudness of the output in dB LUFS.
         
     Returns
     -------
-    output_data : ndarray
+    output : ndarray
         Loudness normalized output data.
     """    
     # calculate the gain needed to scale to the desired loudness level
@@ -60,4 +60,5 @@ def loudness(data, input_loudness, target_loudness):
     # check for potentially clipped samples
     if np.max(np.abs(output)) >= 1.0:
         warnings.warn("Possible clipped samples in output.")
+
     return output

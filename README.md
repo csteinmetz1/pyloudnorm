@@ -22,10 +22,10 @@ It's easy to measure the loudness of a wav file.
 Here we use PySoundFile to read a .wav file as an ndarray.
 ```python
 import soundfile as sf
-import pyloudnorm
+import pyloudnorm as pyln
 
 data, rate = sf.read("test.wav") # load audio
-meter = pyloudnorm.loudness.Meter(rate) # create BS.1770 meter
+meter = pyln.Meter(rate) # create BS.1770 meter
 loudness = meter.integrated_loudness(data) # measure loudness
 ```
 
@@ -34,20 +34,20 @@ Methods are included to normalize audio files to desired peak values or desired 
 Again we use scipy to read a wav file as an ndarray.
 ```python
 import soundfile as sf
-import pyloudnorm
+import pyloudnorm as pyln
 
 # load audio
 data, rate = sf.read("test.wav")
 
 # peak normalize audio to -1 dB
-peak_normalized_audio = pyloudnorm.normalize.peak(data, -1.0)
+peak_normalized_audio = pyln.normalize.peak(data, -1.0)
 
 # measure the loudness first 
-meter = pyloudnorm.loudness.Meter(rate) # create BS.1770 meter
+meter = pyln.Meter(rate) # create BS.1770 meter
 loudness = meter.integrated_loudness(data)
 
 # loudness normalize audio to -12 dB LUFS
-loudness_normalized_audio = pyloudnorm.normalize.loudness(data, loudness, -12.0)
+loudness_normalized_audio = pyln.normalize.loudness(data, loudness, -12.0)
 ```
 
 ## Dependancies

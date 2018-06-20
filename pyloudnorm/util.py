@@ -13,8 +13,6 @@ def valid_audio(data, rate, block_size):
         Sampling rate of the input audio in Hz
     block_size : int
         Analysis block size in seconds 
-    channels : int
-        Number of input audio channels
 
     Returns
     -------
