@@ -1,6 +1,7 @@
 import os
 import pyloudnorm as pyln
 import soundfile as sf
+import numpy as np
 
 def test_integrated_loudness():
 
