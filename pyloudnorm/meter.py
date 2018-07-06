@@ -56,6 +56,10 @@ class Meter():
         the integrated loudness is measured based upon the gating algorithm
         defined in the ITU-R BS.1770-4 specification. 
 
+        Input data must have shape (samples, ch) or (samples,) for mono audio.
+        Supports up to 5 channels and follows the channel ordering: 
+        [Left, Right, Center, Left surround, Right surround]
+
         Params
         -------
         data : ndarray
@@ -122,7 +126,7 @@ class Meter():
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             # calculate the average of z[i,j] as show in eq. 7 with blocks above both thresholds
-            z_avg_gated = np.nan_to_num([np.mean([z[i,j] for j in J_g]) for i in range(numChannels)])
+            z_avg_gated = np.nan_to_num(np.array([np.mean([z[i,j] for j in J_g])) for i in range(numChannels)])
         
         # calculate final loudness gated loudness (see eq. 7)
         with np.errstate(divide='ignore'):

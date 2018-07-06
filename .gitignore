@@ -1,4 +1,5 @@
 build/
+dist/
 junk/
 *.pyc
 .vscode
