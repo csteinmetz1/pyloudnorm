@@ -51,7 +51,6 @@ loudness_normalized_audio = pyln.normalize.loudness(data, loudness, -12.0)
 ## Dependancies
 - **SciPy** ([https://www.scipy.org/](https://www.scipy.org/))
 - **NumPy** ([http://www.numpy.org/](http://www.numpy.org/))
-- **Matplotlib** ([https://matplotlib.org/](https://matplotlib.org/))
 
 ## Todo
 - Add true peak measurement 

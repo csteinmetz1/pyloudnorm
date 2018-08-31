@@ -13,12 +13,11 @@ setup(name='pyloudnorm',
       author_email='cjstein@clemson.edu',
       packages=['pyloudnorm'],
       install_requires=['scipy>=1.0.1',
-                        'numpy>=1.14.2',
-                        'matplotlib>=2.1.1'],
+                        'numpy>=1.14.2'],
       classifiers=(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 2.7",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-      ),
+      )
 )
