@@ -62,7 +62,7 @@ class Meter():
         # Apply frequency weighting filters - account for the acoustic respose of the head and auditory system
         for filter_class in self._filters.values():
             for ch in range(numChannels):
-                input_data[:,ch] = _filters[filter_class].apply_filter(input_data[:,ch])
+                input_data[:,ch] = self._filters[filter_class].apply_filter(input_data[:,ch])
 
         G = [1.0, 1.0, 1.0, 1.41, 1.41] # channel gains
         T_g = self.block_size # 400 ms gating block standard
