@@ -1,4 +1,5 @@
 from __future__ import division
+from builtins import dict
 import warnings
 import numpy as np
 from . import util
@@ -59,9 +60,9 @@ class Meter():
         numSamples  = input_data.shape[0]
 
         # Apply frequency weighting filters - account for the acoustic respose of the head and auditory system
-        for filter_class, filter_stage in self._filters.items():
+        for filter_class in self._filters.values():
             for ch in range(numChannels):
-                input_data[:,ch] = filter_stage.apply_filter(input_data[:,ch])
+                input_data[:,ch] = _filters[filter_class].apply_filter(input_data[:,ch])
 
         G = [1.0, 1.0, 1.0, 1.41, 1.41] # channel gains
         T_g = self.block_size # 400 ms gating block standard
@@ -129,6 +130,6 @@ class Meter():
             self._filters['high_pass'] = IIRfilter(0.0, 0.5, 38.0, self.rate, 'high_pass')
         elif self._filter_class == "Dash et al.":
             self._filters['high_pass'] = IIRfilter(0.0, 0.375, 149.0, self.rate, 'high_pass')
-            self._filters['notch'] = IIRfilter(3.4, 1/np.sqrt(2), 1500.0, self.rate, 'notch')
+            self._filters['peaking'] = IIRfilter(-2.93820927, 1.68878655, 1000.0, self.rate, 'peaking')
         else:
             raise ValueError("Invalid filter class:", self._filter_class)
