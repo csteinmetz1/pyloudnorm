@@ -5,7 +5,7 @@ import numpy as np
 from . import util
 from .iirfilter import IIRfilter
 
-class Meter():
+class Meter(object):
     """ Meter object which defines how the meter operates
 
     Defaults to the algorithm defined in ITU-R BS.1770-4.
@@ -116,6 +116,7 @@ class Meter():
 
     @filter_class.setter
     def filter_class(self, value):
+        print("init of filters")
         self._filters = {} # reset (clear) filters
         self._filter_class = value
         if   self._filter_class == "K-weighting":

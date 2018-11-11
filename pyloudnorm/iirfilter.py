@@ -2,7 +2,7 @@ from textwrap import dedent
 import scipy.signal
 import numpy as np
 
-class IIRfilter():
+class IIRfilter(object):
     """ IIR Filter object to pre-filtering
     
     This class allows for the generation of various IIR filters
