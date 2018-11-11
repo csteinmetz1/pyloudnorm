@@ -81,7 +81,7 @@ class IIRfilter():
             a0 =            (A+1) - (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha
             a1 =      2 * ( (A-1) - (A+1) * np.cos(w0)                          )
             a2 =            (A+1) - (A-1) * np.cos(w0) - 2 * np.sqrt(A) * alpha
-        if self.filter_type == 'low_shelf':
+        elif self.filter_type == 'low_shelf':
             b0 =      A * ( (A+1) - (A-1) * np.cos(w0) + 2 * np.sqrt(A) * alpha )
             b1 =  2 * A * ( (A-1) - (A+1) * np.cos(w0)                          )
             b2 =      A * ( (A+1) - (A-1) * np.cos(w0) - 2 * np.sqrt(A) * alpha )
@@ -117,7 +117,7 @@ class IIRfilter():
             a1 =  -2 * np.cos(w0)
             a2 =   1 - alpha
         else:
-            raise ValueError("Invalid filter typer", self.filter_type)
+            raise ValueError("Invalid filter type", self.filter_type)            
 
         return np.array([b0, b1, b2])/a0, np.array([a0, a1, a2])/a0
 
@@ -134,7 +134,7 @@ class IIRfilter():
         filtered_signal : ndarray
             Filtered input audio.
         """
-        return passband_gain * scipy.signal.lfilter(self.b, self.a, data)
+        return self.passband_gain * scipy.signal.lfilter(self.b, self.a, data)
 
     @property
     def a(self):
