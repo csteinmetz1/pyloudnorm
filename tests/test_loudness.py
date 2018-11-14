@@ -53,6 +53,7 @@ def AbsGateTest():
 AbsGateTest()
 
 def _24LKFS_25Hz_2ch():
+	
 	data, rate = sf.read("tests/data/1770-2_Comp_24LKFS_25Hz_2ch.wav")
 	meter = pyln.Meter(rate)
 	loudness = meter.integrated_loudness(data)
