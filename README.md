@@ -6,14 +6,7 @@ Allows control over gating block size and frequency weighting filters for additi
 
 ## Installation
 ```
-# get pyloudness source
-git clone https://github.com/csteinmetz1/pyloudnorm.git
-
-# install dependancies
-pip install -r requirements.txt
-
-# run setup from new directory
-python setup.py install
+pip install git+https://github.com/csteinmetz1/pyloudnorm
 ```
 ## Usage
 
@@ -52,9 +45,3 @@ loudness_normalized_audio = pyln.normalize.loudness(data, loudness, -12.0)
 - **SciPy** ([https://www.scipy.org/](https://www.scipy.org/))
 - **NumPy** ([http://www.numpy.org/](http://www.numpy.org/))
 
-## Todo
-- Add true peak measurement 
-- Develop unit tests - include audio files - check potential changes in loudness measurements
-- Add additional filters (see [this paper](http://www.aes.org/e-lib/browse.cfm?elib=19215&rndx=851198))
-- Include tests from the EBU R128 spec 
-- Setup documentation

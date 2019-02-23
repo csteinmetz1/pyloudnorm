@@ -116,7 +116,6 @@ class Meter(object):
 
     @filter_class.setter
     def filter_class(self, value):
-        print("init of filters")
         self._filters = {} # reset (clear) filters
         self._filter_class = value
         if   self._filter_class == "K-weighting":
