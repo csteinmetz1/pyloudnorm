@@ -70,10 +70,10 @@ class Meter(object):
         overlap = 0.75 # overlap of 75% of the block duration
         step = 1.0 - overlap # step size by percentage
 
-        z = np.zeros(shape=(numChannels,numSamples)) # instantiate array - trasponse of input
         T = numSamples / self.rate # length of the input in seconds
         numBlocks = int(np.round(((T - T_g) / (T_g * step)))+1) # total number of gated blocks (see end of eq. 3)
         j_range = np.arange(0, numBlocks) # indexed list of total blocks
+        z = np.zeros(shape=(numChannels,numBlocks)) # instantiate array - trasponse of input
 
         for i in range(numChannels): # iterate over input channels
             for j in j_range: # iterate over total frames
