@@ -134,5 +134,7 @@ class Meter(object):
         elif self._filter_class == "DeMan":
             self._filters['high_shelf_DeMan'] = IIRfilter(3.99984385397, 0.7071752369554193, 1681.9744509555319, self.rate, 'high_shelf_DeMan')
             self._filters['high_pass_DeMan'] = IIRfilter(0.0, 0.5003270373253953, 38.13547087613982, self.rate, 'high_pass_DeMan')
+        elif self._filter_class == "custom":
+            pass
         else:
             raise ValueError("Invalid filter class:", self._filter_class)
