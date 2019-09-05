@@ -47,7 +47,7 @@ Examples are shown below.
 ```python
 import soundfile as sf
 import pyloudnorm as pyln
-from pyloudnorm import IIRFilter
+from pyloudnorm import IIRfilter
 
 data, rate = sf.read("test.wav") # load audio
 
