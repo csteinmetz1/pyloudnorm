@@ -5,6 +5,12 @@ Implementation of [ITU-R BS.1770-4](https://www.itu.int/dms_pubrec/itu-r/rec/bs/
 Allows control over gating block size and frequency weighting filters for additional control. 
 
 ## Installation
+You can install with pip as follows
+```
+pip install pyloudnorm
+```
+
+For the latest releases always install from the GitHub repo
 ```
 pip install git+https://github.com/csteinmetz1/pyloudnorm
 ```
