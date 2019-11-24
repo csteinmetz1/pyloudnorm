@@ -1,4 +1,4 @@
-# pyloudnorm  [![Build Status](https://travis-ci.org/csteinmetz1/pyloudnorm.svg?branch=master)](https://travis-ci.org/csteinmetz1/pyloudnorm)
+# pyloudnorm  [![Build Status](https://travis-ci.org/csteinmetz1/pyloudnorm.svg?branch=master)](https://travis-ci.org/csteinmetz1/pyloudnorm) ![Zenodo](https://zenodo.org/badge/DOI/10.5281/zenodo.3551801.svg)
 Flexible audio loudness meter in Python. 
 
 Implementation of [ITU-R BS.1770-4](https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-E.pdf). <br/>
@@ -83,6 +83,9 @@ meter8._filters = {'my_high_pass' : my_high_pass, 'my_high_shelf' : my_high_shel
 ## Dependancies
 - **SciPy** ([https://www.scipy.org/](https://www.scipy.org/))
 - **NumPy** ([http://www.numpy.org/](http://www.numpy.org/))
+
+## Cite as
+> Christian Steinmetz, [csteinmetz1/pyloudnorm: 0.1.0](http://doi.org/10.5281/zenodo.3551801) (Version v0.1.0), Zenodo, November 2019 
 
 ## References
 
