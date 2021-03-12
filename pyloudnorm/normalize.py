@@ -1,6 +1,6 @@
 import warnings
 import numpy as np
-import scipy.io.wavfile
+
 
 def peak(data, target):
     """ Peak normalize a signal.
