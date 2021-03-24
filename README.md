@@ -4,6 +4,8 @@ Flexible audio loudness meter in Python.
 Implementation of [ITU-R BS.1770-4](https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-E.pdf). <br/>
 Allows control over gating block size and frequency weighting filters for additional control. 
 
+For full details on the implementation see our [paper](https://csteinmetz1.github.io/pyloudnorm-eval/paper/pyloudnorm_preprint.pdf).
+
 ## Installation
 You can install with pip as follows
 ```
@@ -84,8 +86,15 @@ meter8._filters = {'my_high_pass' : my_high_pass, 'my_high_shelf' : my_high_shel
 - **SciPy** ([https://www.scipy.org/](https://www.scipy.org/))
 - **NumPy** ([http://www.numpy.org/](http://www.numpy.org/))
 
-## Cite as
-> Christian Steinmetz, [csteinmetz1/pyloudnorm: 0.1.0](http://doi.org/10.5281/zenodo.3551801) (Version v0.1.0), Zenodo, November 2019 
+
+## Citation
+If you use pyloudnorm in your work please consider citing us.
+```
+@article{steinmetz2021pyloudnorm,
+        title={pyloudnorm: {A} simple yet flexible loudness meter in Python},
+        author={Steinmetz, Christian J. and Reiss, Joshua D.},
+        year={2021}}
+```
 
 ## References
 
