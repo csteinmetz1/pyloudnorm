@@ -4,7 +4,7 @@ Flexible audio loudness meter in Python.
 Implementation of [ITU-R BS.1770-4](https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-E.pdf). <br/>
 Allows control over gating block size and frequency weighting filters for additional control. 
 
-For full details on the implementation see our [paper](https://csteinmetz1.github.io/pyloudnorm-eval/paper/pyloudnorm_preprint.pdf).
+For full details on the implementation see our [paper](https://csteinmetz1.github.io/pyloudnorm-eval/paper/pyloudnorm_preprint.pdf) with a summary in our [AES presentation video](https://www.youtube.com/watch?v=krSJpQ3d4gE).
 
 ## Installation
 You can install with pip as follows
