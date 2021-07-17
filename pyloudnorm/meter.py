@@ -20,6 +20,7 @@ class Meter(object):
         - 'Fenton/Lee 1'
         - 'Fenton/Lee 2'
         - 'Dash et al.'
+        - 'DeMan'
     block_size : float
         Gating block size in seconds.
     """
