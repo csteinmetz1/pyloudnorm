@@ -93,7 +93,7 @@ If you use pyloudnorm in your work please consider citing us.
 @inproceedings{steinmetz2021pyloudnorm,
         title={pyloudnorm: {A} simple yet flexible loudness meter in Python},
         author={Steinmetz, Christian J. and Reiss, Joshua D.},
-        booktitle={150th AES Convention}
+        booktitle={150th AES Convention},
         year={2021}}
 ```
 
