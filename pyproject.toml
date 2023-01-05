@@ -1,0 +1,13 @@
+[project]
+name = "pyloudnorm"
+version = "0.1.1"
+description = "Implementation of ITU-R BS.1770-4 loudness algorithm in Python."
+authors = [
+    { name = "Christian Steinmetz" },
+    { email = "c.j.steinmetz@qmul.ac.uk" },
+]
+
+[build-system]
+# Minimum requirements for the build system to execute.
+requires = ["setuptools>=58.0", "wheel", "attrs"]
+build-backend = "setuptools.build_meta"
