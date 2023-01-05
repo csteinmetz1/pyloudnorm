@@ -9,14 +9,14 @@ def test_integrated_loudness():
 	meter = pyln.Meter(rate)
 	loudness = meter.integrated_loudness(data)
 
-	assert loudness == -3.0523438444331137
+	assert np.isclose(loudness, -3.0523438444331137)
 
 def test_peak_normalize():
 
 	data = np.array(0.5)
 	norm = pyln.normalize.peak(data, 0.0)
 
-	assert norm == 1.0
+	assert  np.isclose(norm, 1.0)
 
 def test_loudness_normalize():
 
@@ -26,7 +26,7 @@ def test_loudness_normalize():
 	norm = pyln.normalize.loudness(data, loudness, -6.0)
 	loudness = meter.integrated_loudness(norm)
 
-	assert loudness == -6.0
+	assert np.isclose(loudness, -6.0)
 
 def test_rel_gate_test():
 	
