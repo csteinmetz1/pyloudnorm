@@ -28,7 +28,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     url=URL,
     packages=["pyloudnorm"],
-    install_requires=["scipy>=1.0.1", "numpy>=1.14.2", "future>=0.16.0"],
+    install_requires=["scipy>=1.0.1", "numpy>=1.14.2"],
     include_package_data=True,
     license="MIT",
     classifiers=[
