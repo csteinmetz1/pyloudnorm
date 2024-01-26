@@ -82,7 +82,7 @@ meter8._filters = {'my_high_pass' : my_high_pass, 'my_high_shelf' : my_high_shel
 
 ```
 
-## Dependancies
+## Dependencies
 - **SciPy** ([https://www.scipy.org/](https://www.scipy.org/))
 - **NumPy** ([http://www.numpy.org/](http://www.numpy.org/))
 
@@ -114,3 +114,8 @@ If you use pyloudnorm in your work please consider citing us.
 > Brecht De Man, "[Evaluation of Implementations of the EBU R128 Loudness Measurement](http://www.aes.org/e-lib/browse.cfm?elib=19790)," 
 > 145th International Convention of the Audio Engineering Society, October 2018. 
 
+## Tensorized/Differentiable Implementations
+
+For use in differentiable contexts, such as part of a loss function, there are the following implementations:
+- PyTorch: [Descript Inc.'s `audiotools`](https://github.com/descriptinc/audiotools/blob/master/audiotools/core/loudness.py)
+- Jax: [jaxloudnorm](https://github.com/boris-kuz/jaxloudnorm)
