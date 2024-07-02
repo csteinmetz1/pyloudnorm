@@ -23,10 +23,12 @@ class Meter(object):
         Gating block size in seconds.
     """
 
-    def __init__(self, rate, filter_class="K-weighting", block_size=0.400):
+    def __init__(self, rate, filter_class="K-weighting", block_size=0.400, overlap=0.75):
         self.rate = rate
         self.filter_class = filter_class
         self.block_size = block_size
+        self.overlap = overlap
+        self.blockwise_loudness = []
 
     def integrated_loudness(self, data):
         """ Measure the integrated gated loudness of a signal.
@@ -66,7 +68,7 @@ class Meter(object):
         G = [1.0, 1.0, 1.0, 1.41, 1.41] # channel gains
         T_g = self.block_size # 400 ms gating block standard
         Gamma_a = -70.0 # -70 LKFS = absolute loudness threshold
-        overlap = 0.75 # overlap of 75% of the block duration
+        overlap = self.overlap # overlap of 75% of the block duration
         step = 1.0 - overlap # step size by percentage
 
         T = numSamples / self.rate # length of the input in seconds
@@ -85,6 +87,7 @@ class Meter(object):
             warnings.simplefilter("ignore", category=RuntimeWarning)
             # loudness for each jth block (see eq. 4)
             l = [-0.691 + 10.0 * np.log10(np.sum([G[i] * z[i,j] for i in range(numChannels)])) for j in j_range]
+        self.blockwise_loudness = l
 
         # find gating block indices above absolute threshold
         J_g = [j for j,l_j in enumerate(l) if l_j >= Gamma_a]
@@ -108,6 +111,73 @@ class Meter(object):
             LUFS = -0.691 + 10.0 * np.log10(np.sum([G[i] * z_avg_gated[i] for i in range(numChannels)]))
 
         return LUFS
+
+    def loudness_range(self, data):
+        """ Measure the loudness range of a signal.
+
+        An implementation based on the MATLAB example of TECH 3342 -
+        LOUDNESS RANGE: A MEASURE TO SUPPLEMENT EBU R 128 LOUDNESS NORMALIZATION
+
+        Input data must have shape (samples, ch) or (samples,) for mono audio.
+        Supports up to 5 channels and follows the channel ordering:
+        [Left, Right, Center, Left surround, Right surround]
+
+        Params
+        -------
+        data : ndarray
+            Input multichannel audio data.
+
+        Returns
+        -------
+        LRA : float
+            Loudness Range measure in LU.
+        """
+        # Recommended block size = 3s with a rate at 10Hz (i.e. overlap ~2.9s)
+        self.block_size = 3.0
+        self.overlap = 0.97
+        # the signal should be followed by at least 1.5 s of silence
+        data = self.append_silence(data, silence_duration_sec=1.5)
+        self.integrated_loudness(data)
+        # Input to the rest of the script should be short_term_loudness (before gating)
+        if not self.blockwise_loudness:
+            raise ValueError("No blockwise loudness found")
+        # Constants
+        ABS_THRES = -70  # LUFS
+        REL_THRES = -20  # LU
+        PRC_LOW = 10  # lower percentile
+        PRC_HIGH = 95  # upper percentile
+
+        # Apply the absolute-threshold gating
+        stl_absgated_vec = [x for x in self.blockwise_loudness if x >= ABS_THRES]
+
+        # Apply the relative-threshold gating
+        n = len(stl_absgated_vec)
+        stl_power = np.sum(np.power(10, np.divide(stl_absgated_vec, 10))) / n
+        stl_integrated = 10 * np.log10(stl_power)
+        stl_relgated_vec = [x for x in stl_absgated_vec if x >= stl_integrated + REL_THRES]
+
+        # Compute the high and low percentiles of the distribution of values in stl_relgated_vec
+        stl_perc_low = np.percentile(stl_relgated_vec, PRC_LOW)
+        stl_perc_high = np.percentile(stl_relgated_vec, PRC_HIGH)
+        LRA = stl_perc_high - stl_perc_low
+        return LRA
+
+    def append_silence(self, data, silence_duration_sec):
+        num_silence_samples = int(silence_duration_sec * self.rate)
+        silence = np.zeros(num_silence_samples)
+
+        # Check the shape of audio_data and append silence accordingly
+        if len(data.shape) == 1:
+            # Mono audio
+            new_audio_data = np.concatenate((data, silence))
+        elif len(data.shape) == 2:
+            # Stereo or multi-channel audio
+            num_channels = data.shape[1]
+            silence = np.zeros((num_silence_samples, num_channels))
+            new_audio_data = np.concatenate((data, silence), axis=0)
+        else:
+            raise ValueError("Invalid shape for audio data")
+        return new_audio_data
 
     @property
     def filter_class(self):
