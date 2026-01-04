@@ -2,12 +2,37 @@
 name = "pyloudnorm"
 version = "0.1.1"
 description = "Implementation of ITU-R BS.1770-4 loudness algorithm in Python."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
 authors = [
-    { name = "Christian Steinmetz" },
-    { email = "c.j.steinmetz@qmul.ac.uk" },
+    { name = "Christian Steinmetz", email = "c.j.steinmetz@qmul.ac.uk" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "scipy>=1.0.1",
+    "numpy>=1.14.2",
 ]
 
+[project.urls]
+Homepage = "https://github.com/csteinmetz1/pyloudnorm"
+Repository = "https://github.com/csteinmetz1/pyloudnorm"
+
 [build-system]
-# Minimum requirements for the build system to execute.
-requires = ["setuptools>=58.0", "wheel", "attrs"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["pyloudnorm*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
