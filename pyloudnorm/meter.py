@@ -131,38 +131,56 @@ class Meter(object):
         -------
         LRA : float
             Loudness Range measure in LU.
+            Returns NaN if the signal is too quiet to compute LRA.
         """
-        # Recommended block size = 3s with a rate at 10Hz (i.e. overlap ~2.9s)
-        self.block_size = 3.0
-        self.overlap = 0.97
-        # the signal should be followed by at least 1.5 s of silence
-        data = self.append_silence(data, silence_duration_sec=1.5)
-        self.integrated_loudness(data)
-        # Input to the rest of the script should be short_term_loudness (before gating)
-        if not self.blockwise_loudness:
-            raise ValueError("No blockwise loudness found")
-        # Constants
-        ABS_THRES = -70  # LUFS
-        REL_THRES = -20  # LU
-        PRC_LOW = 10  # lower percentile
-        PRC_HIGH = 95  # upper percentile
+        # Save original meter settings to restore after LRA calculation
+        original_block_size = self.block_size
+        original_overlap = self.overlap
 
-        # Apply the absolute-threshold gating
-        stl_absgated_vec = [x for x in self.blockwise_loudness if x >= ABS_THRES]
+        try:
+            # Recommended block size = 3s with a rate at 10Hz (i.e. overlap ~2.9s)
+            self.block_size = 3.0
+            self.overlap = 0.97
+            # the signal should be followed by at least 1.5 s of silence
+            data = self._append_silence(data, silence_duration_sec=1.5)
+            self.integrated_loudness(data)
+            # Input to the rest of the script should be short_term_loudness (before gating)
+            if not self.blockwise_loudness:
+                raise ValueError("No blockwise loudness found")
+            # Constants
+            ABS_THRES = -70  # LUFS
+            REL_THRES = -20  # LU
+            PRC_LOW = 10  # lower percentile
+            PRC_HIGH = 95  # upper percentile
 
-        # Apply the relative-threshold gating
-        n = len(stl_absgated_vec)
-        stl_power = np.sum(np.power(10, np.divide(stl_absgated_vec, 10))) / n
-        stl_integrated = 10 * np.log10(stl_power)
-        stl_relgated_vec = [x for x in stl_absgated_vec if x >= stl_integrated + REL_THRES]
+            # Apply the absolute-threshold gating
+            stl_absgated_vec = [x for x in self.blockwise_loudness if x >= ABS_THRES]
 
-        # Compute the high and low percentiles of the distribution of values in stl_relgated_vec
-        stl_perc_low = np.percentile(stl_relgated_vec, PRC_LOW)
-        stl_perc_high = np.percentile(stl_relgated_vec, PRC_HIGH)
-        LRA = stl_perc_high - stl_perc_low
-        return LRA
+            # Handle edge case: no blocks above absolute threshold
+            if len(stl_absgated_vec) == 0:
+                return np.nan
 
-    def append_silence(self, data, silence_duration_sec):
+            # Apply the relative-threshold gating
+            n = len(stl_absgated_vec)
+            stl_power = np.sum(np.power(10, np.divide(stl_absgated_vec, 10))) / n
+            stl_integrated = 10 * np.log10(stl_power)
+            stl_relgated_vec = [x for x in stl_absgated_vec if x >= stl_integrated + REL_THRES]
+
+            # Handle edge case: no blocks above relative threshold
+            if len(stl_relgated_vec) == 0:
+                return np.nan
+
+            # Compute the high and low percentiles of the distribution of values in stl_relgated_vec
+            stl_perc_low = np.percentile(stl_relgated_vec, PRC_LOW)
+            stl_perc_high = np.percentile(stl_relgated_vec, PRC_HIGH)
+            LRA = stl_perc_high - stl_perc_low
+            return LRA
+        finally:
+            # Restore original meter settings
+            self.block_size = original_block_size
+            self.overlap = original_overlap
+
+    def _append_silence(self, data, silence_duration_sec):
         num_silence_samples = int(silence_duration_sec * self.rate)
         silence = np.zeros(num_silence_samples)
 
