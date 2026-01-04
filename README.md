@@ -49,6 +49,21 @@ loudness = meter.integrated_loudness(data)
 loudness_normalized_audio = pyln.normalize.loudness(data, loudness, -12.0)
 ```
 
+### Loudness range
+Attempt to measure the Loudness Range (LRA) of an audio file based on [EBU Tech 3342](https://tech.ebu.ch/docs/tech/tech3342.pdf).
+LRA quantifies the variation in loudness over time, measured in LU (Loudness Units).
+```python
+import soundfile as sf
+import pyloudnorm as pyln
+
+data, rate = sf.read("test.wav") # load audio
+
+meter = pyln.Meter(rate) # create BS.1770 meter
+lra = meter.loudness_range(data) # measure loudness range
+
+print(f"Loudness Range: {lra:.1f} LU")
+```
+
 ### Advanced operation
 A number of alternate weighting filters are available, as well as the ability to adjust the analysis block size. 
 Examples are shown below.
